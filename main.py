@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from datetime import datetime, timezone
+from fastapi import FastAPI, status
 from database import clients_collection
+from schemas.client import ClientCreate
 
 app = FastAPI(
     title="HookFlow",
@@ -30,3 +32,19 @@ def get_clients():
         })
 
     return result
+
+@app.post("/clients",status_code=status.HTTP_201_CREATED)
+def create_client(request: ClientCreate):
+
+    data = request.model_dump()
+    data["active"] = True
+    data["created_at"] = datetime.now(timezone.utc)
+
+    result = clients_collection.insert_one(data)
+
+    return {
+        "id": str(result.inserted_id),
+        "name": data["name"],
+        "active": data["active"],
+        "created_at": data["created_at"].isoformat()
+    }
