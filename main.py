@@ -1,9 +1,8 @@
-
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from database import check_database_connection
 from routers.clients import router as client_router
-
+from routers.api_keys import router as api_key_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -19,6 +18,7 @@ app = FastAPI(
 )
 
 app.include_router(client_router)
+app.include_router(api_key_router)
 
 @app.get("/health")
 def health_check():
