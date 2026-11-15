@@ -6,3 +6,6 @@ def save_client_api_key(data):
         {"$set": data},
         upsert=True
     )
+
+def get_api_key_by_hash(api_key_hash):
+    return api_keys_collection.find_one({"key_hash":api_key_hash})
