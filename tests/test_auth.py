@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 from dependencies.auth import get_authenticated_client
 from database import clients_collection, api_keys_collection
 from utils.api_key_utils import generate_api_key, hash_api_key
+from datetime import datetime, timezone
 
 app = FastAPI()
 
@@ -22,9 +23,7 @@ def auth_test_data():
     client_data = {
         "name": "AuthTestClient",
         "active": True,
-        "created_at": __import__("datetime").datetime.now(
-            __import__("datetime").timezone.utc
-        )
+        "created_at": datetime.now(timezone.utc)
     }
 
     client_result = clients_collection.insert_one(client_data)
