@@ -1,4 +1,3 @@
-import hashlib
 from repositories import client_repository, api_key_repository
 from utils import api_key_utils
 from datetime import datetime, timezone
