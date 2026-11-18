@@ -10,6 +10,8 @@ db = client["hookflow"]
 clients_collection = db["clients"]
 api_keys_collection = db["api_keys"]
 webhook_endpoints_collection = db["webhook_endpoints"]
+events_collection = db["events"]
+deliveries_collection = db["deliveries"]
 
 def check_database_connection():
     client.admin.command("ping")
