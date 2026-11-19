@@ -5,7 +5,6 @@ from routers.clients import router as client_router
 from routers.api_keys import router as api_key_router
 from routers.webhook_endpoints import router as webhook_endpoint_router
 from routers.events import router as event_router
-from routers.task_test import router as test_task_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -24,7 +23,6 @@ app.include_router(client_router)
 app.include_router(api_key_router)
 app.include_router(webhook_endpoint_router)
 app.include_router(event_router)
-app.include_router(test_task_router)
 
 @app.get("/health")
 def health_check():
