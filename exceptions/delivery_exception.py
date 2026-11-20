@@ -1,0 +1,2 @@
+class DeliveryNotFoundException(Exception):
+    pass
