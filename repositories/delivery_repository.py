@@ -38,6 +38,24 @@ def update_delivery_outcome(delivery_id, status, http_status, response_body, err
                 "response_body": response_body,
                 "error_message": error_message,
                 "completed_at": completed_at
+            },
+            "$unset": {
+                "next_attempt_at": ""
+            }
+        }
+    )
+
+
+def schedule_delivery_retry(delivery_id, http_status, response_body, error_message, next_attempt_at):
+    deliveries_collection.update_one(
+        {"_id": ObjectId(delivery_id)},
+        {
+            "$set": {
+                "status": "retrying",
+                "http_status": http_status,
+                "response_body": response_body,
+                "error_message": error_message,
+                "next_attempt_at": next_attempt_at
             }
         }
     )
@@ -52,3 +70,8 @@ def increment_attempt_count(delivery_id):
             }
         }
     )
+
+
+def get_attempt_count(delivery_id):
+    delivery = deliveries_collection.find_one({"_id": ObjectId(delivery_id)})
+    return delivery["attempt_count"]

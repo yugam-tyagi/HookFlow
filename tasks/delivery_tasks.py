@@ -3,7 +3,8 @@ from celery_app import celery_app
 from repositories import delivery_repository, webhook_endpoint_repository, event_repository
 from exceptions import delivery_exception, event_exception, webhook_endpoint_exception
 from schemas.webhook_event import WebhookEventPayload
-from datetime import datetime, timezone
+from services import retry_service
+from datetime import datetime, timezone, timedelta
 
 @celery_app.task(name="process_delivery")
 def process_delivery(delivery_id: str):
@@ -32,17 +33,14 @@ def process_delivery(delivery_id: str):
     payload = event_payload.model_dump(mode='json')
 
     with httpx.Client(timeout=10.0) as client:
-        response_status = None
+        response_status = 0
         response_body = None
         error_message = None
-        is_success = False
         try:
             delivery_repository.increment_attempt_count(delivery_id)
             response = client.post(endpoint["url"],json=payload)
             response_status = response.status_code
             response_body = response.text[:4096]
-            if response.is_success:
-                is_success = True
         except httpx.TimeoutException as e:
             error_message = str(e)
         except httpx.ConnectError as e:
@@ -50,9 +48,14 @@ def process_delivery(delivery_id: str):
         except httpx.RequestError as e:
             error_message = str(e)
 
-    status = "delivered"
-    completed_at = datetime.now(timezone.utc)
-    if not is_success: 
-        status = "failed"
+    current_attempt_count = delivery_repository.get_attempt_count(delivery_id)
+    delivery_status = retry_service.should_retry(current_attempt_count, response_status)
 
-    delivery_repository.update_delivery_outcome(delivery_id,status,response_status,response_body,error_message,completed_at)
+    if delivery_status == "delivered" or delivery_status == "failed":
+        completed_at = datetime.now(timezone.utc)
+        delivery_repository.update_delivery_outcome(delivery_id,delivery_status,response_status,response_body,error_message,completed_at)
+    else:
+        delay = retry_service.calculate_retry_delay(current_attempt_count)
+        next_attempt_at = datetime.now(timezone.utc) + timedelta(seconds=delay)
+        delivery_repository.schedule_delivery_retry(delivery_id,response_status,response_body,error_message,next_attempt_at)
+        process_delivery.apply_async(args=[delivery_id],countdown=delay)
