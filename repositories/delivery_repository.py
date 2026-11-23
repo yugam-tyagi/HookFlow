@@ -105,6 +105,32 @@ def claim_delivery(delivery_id):
     return claimed_delivery
 
 
+def get_deliveries_for_recovery(current_timestamp):
+    cursor = deliveries_collection.find(
+        {
+            "$or": [
+                {
+                    "status": "pending",
+                    "next_attempt_at": {"$lte": current_timestamp}
+                },
+                {
+                    "status": "retrying",
+                    "next_attempt_at": {"$lte": current_timestamp}
+                },
+                {
+                    "status": "processing",
+                    "lease_expires_at": {"$lte": current_timestamp}
+                }
+            ]
+        }
+    ).sort("next_attempt_at",1).limit(100)
+
+    delivery_ids=[]
+    for item in cursor:
+        delivery_ids.append(item["_id"])
+
+    return delivery_ids
+
 def mark_delivery_failed(delivery_id, error_message):
     completed_at = datetime.now(timezone.utc)
 
