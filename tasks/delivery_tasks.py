@@ -8,19 +8,22 @@ from datetime import datetime, timezone, timedelta
 
 @celery_app.task(name="process_delivery")
 def process_delivery(delivery_id: str):
-    delivery = delivery_repository.get_delivery_by_id(delivery_id)
+    delivery = delivery_repository.claim_delivery(delivery_id)
     if delivery is None:
-        raise delivery_exception.DeliveryNotFoundException("Delivery doesn't exist")
+        return
 
     client_id = delivery["client_id"]
     endpoint_id = delivery["endpoint_id"]
     event_id = delivery["event_id"]
+
     event = event_repository.get_event_by_id(event_id)
     if event is None:
+        delivery_repository.mark_delivery_failed(delivery_id,"Event doesn't exist")
         raise event_exception.EventNotFoundException("Event doesn't exist")
     
     endpoint = webhook_endpoint_repository.get_webhook_endpoint_by_id(client_id,endpoint_id)
     if endpoint is None:
+        delivery_repository.mark_delivery_failed(delivery_id,"Endpoint doesn't exist")
         raise webhook_endpoint_exception.WebhookEndpointNotFoundException("Endpoint doesn't exist")
 
     event_payload = WebhookEventPayload(

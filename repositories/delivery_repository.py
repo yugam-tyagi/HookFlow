@@ -1,5 +1,7 @@
 from database import deliveries_collection
 from bson import ObjectId
+from datetime import datetime, timezone, timedelta
+from pymongo import ReturnDocument
 
 def create_deliveries(event_id, client_id, endpoints, timestamp):
     deliveries =[]
@@ -40,7 +42,9 @@ def update_delivery_outcome(delivery_id, status, http_status, response_body, err
                 "completed_at": completed_at
             },
             "$unset": {
-                "next_attempt_at": ""
+                "next_attempt_at": "",
+                "processing_started_at": "",
+                "lease_expires_at": ""
             }
         }
     )
@@ -56,6 +60,65 @@ def schedule_delivery_retry(delivery_id, http_status, response_body, error_messa
                 "response_body": response_body,
                 "error_message": error_message,
                 "next_attempt_at": next_attempt_at
+            },
+            "$unset": {
+                "processing_started_at": "",
+                "lease_expires_at": ""
+            }
+        }
+    )
+
+
+def claim_delivery(delivery_id):
+    now = datetime.now(timezone.utc)
+
+    claimed_delivery = deliveries_collection.find_one_and_update(
+        {
+            "_id": ObjectId(delivery_id),
+            "$or": [
+                {
+                    "status": "pending",
+                    "next_attempt_at": {"$lte": now}
+                },
+                {
+                    "status": "retrying",
+                    "next_attempt_at": {"$lte": now}
+                },
+                {
+                    "status": "processing",
+                    "lease_expires_at": {"$lte": now}
+                }
+            ]
+        },
+        {
+            "$set": {
+                "processing_started_at": now,
+                "status": "processing",
+                "lease_expires_at": now + timedelta(seconds=60)
+            }
+        },
+        return_document=ReturnDocument.AFTER  
+    )
+
+    if claimed_delivery is None:
+        return None
+    return claimed_delivery
+
+
+def mark_delivery_failed(delivery_id, error_message):
+    completed_at = datetime.now(timezone.utc)
+
+    deliveries_collection.update_one(
+        {"_id": ObjectId(delivery_id)},
+        {
+            "$set": {
+                "status": "failed",
+                "error_message": error_message,
+                "completed_at": completed_at
+            },
+            "$unset": {
+                "next_attempt_at": "",
+                "lease_expires_at": ""
             }
         }
     )

@@ -9,8 +9,6 @@ celery_app = Celery(
     include=["tasks.delivery_tasks"]
 )
 
-# celery_app.autodiscover_tasks(["tasks"])
-
 celery_app.conf.update(
     task_ignore_result=True,
     task_acks_late=True,
