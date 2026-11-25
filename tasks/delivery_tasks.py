@@ -1,9 +1,9 @@
-import httpx
+import httpx, json
 from celery_app import celery_app
 from repositories import delivery_repository, webhook_endpoint_repository, event_repository
-from exceptions import delivery_exception, event_exception, webhook_endpoint_exception
+from exceptions import event_exception, webhook_endpoint_exception
 from schemas.webhook_event import WebhookEventPayload
-from services import retry_service
+from services import retry_service, signature_service
 from datetime import datetime, timezone, timedelta
 
 @celery_app.task(name="process_delivery")
@@ -34,6 +34,18 @@ def process_delivery(delivery_id: str):
     )
 
     payload = event_payload.model_dump(mode='json')
+    signing_secret = endpoint["signing_secret"]
+    serialized_payload = json.dumps(payload,separators=(",",":")).encode("utf-8")
+    timestamp = datetime.now(timezone.utc)
+    unix_timestamp = str(int(timestamp.timestamp()))
+
+    signature = signature_service.generate_signature(signing_secret,serialized_payload,unix_timestamp)
+
+    headers = {
+        "Content-Type": "application/json",
+        "X-HookFlow-Timestamp": unix_timestamp,
+        "X-HookFlow-Signature": signature,
+    }
 
     with httpx.Client(timeout=10.0) as client:
         response_status = 0
@@ -41,7 +53,7 @@ def process_delivery(delivery_id: str):
         error_message = None
         try:
             delivery_repository.increment_attempt_count(delivery_id)
-            response = client.post(endpoint["url"],json=payload)
+            response = client.post(endpoint["url"],headers=headers,content=serialized_payload)
             response_status = response.status_code
             response_body = response.text[:4096]
         except httpx.TimeoutException as e:

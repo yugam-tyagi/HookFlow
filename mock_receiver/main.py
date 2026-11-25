@@ -1,5 +1,5 @@
-import asyncio
-from fastapi import FastAPI, status, Response
+import asyncio, os, hmac, hashlib
+from fastapi import FastAPI, status, Response, Request
 from fastapi.responses import JSONResponse
 
 
@@ -8,6 +8,7 @@ app = FastAPI(
     description="Mock reciever to test Hookflow",
     version="1.0.0",
 )
+
 
 @app.post("/webhooks/success")
 def webhook_success():
@@ -57,3 +58,24 @@ def webhook_fail_four_times():
             "attempt": fail_four_times_attempts
         }
     )
+
+
+@app.post("/webhooks/verify")
+async def verify_webhook(request: Request):
+    body = await request.body()
+
+    timestamp = request.headers.get("X-HookFlow-Timestamp")
+    received_signature = request.headers.get("X-HookFlow-Signature")
+
+    if not timestamp or not received_signature:
+        return JSONResponse(status_code=400,content={"message": "Missing signature headers"})
+
+    signing_secret = os.getenv("HOOKFLOW_SIGNING_SECRET")
+    message = timestamp.encode("utf-8") + b"." + body
+
+    expected_signature = hmac.new(key=signing_secret.encode("utf-8"),msg=message,digestmod=hashlib.sha256).hexdigest()
+
+    if not hmac.compare_digest(expected_signature, received_signature):
+        return JSONResponse(status_code=401,content={"message": "Invalid signature"})
+
+    return JSONResponse(status_code=200,content={"message": "Signature verified successfully"})
