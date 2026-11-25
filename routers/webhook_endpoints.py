@@ -6,7 +6,7 @@ from exceptions.webhook_endpoint_exception import WebhookEndpointNotFoundExcepti
 
 router = APIRouter(prefix="/webhook-endpoints", tags=["webhook_endpoints"])
 
-@router.post("/",response_model=WebhookEndpointResponse)
+@router.post("/",response_model=WebhookEndpointResponse,response_model_exclude_none=True)
 def register_webhook_endpoint(request: WebhookEndpointCreate, response: Response, client=Depends(get_authenticated_client)):
     data = request.model_dump()
     endpoint_response, is_created = webhook_endpoint_service.register_webhook_endpoint(client,data)
@@ -19,12 +19,12 @@ def register_webhook_endpoint(request: WebhookEndpointCreate, response: Response
     return endpoint_response
 
 
-@router.get("/",response_model=list[WebhookEndpointResponse],status_code=status.HTTP_200_OK)
+@router.get("/",response_model=list[WebhookEndpointResponse],response_model_exclude_none=True,status_code=status.HTTP_200_OK)
 def get_webhook_endpoints(client=Depends(get_authenticated_client)):
     return webhook_endpoint_service.get_webhook_endpoints(client)
 
 
-@router.get("/{endpoint_id}",status_code=status.HTTP_200_OK,response_model=WebhookEndpointResponse)
+@router.get("/{endpoint_id}",status_code=status.HTTP_200_OK,response_model=WebhookEndpointResponse,response_model_exclude_none=True)
 def get_webhook_endpoint(endpoint_id:str, client=Depends(get_authenticated_client)):
     try:
         return webhook_endpoint_service.get_webhook_endpoint(client, endpoint_id)

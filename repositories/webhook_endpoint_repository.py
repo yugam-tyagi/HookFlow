@@ -2,7 +2,7 @@ from database import webhook_endpoints_collection
 from datetime import datetime, timezone
 from bson import ObjectId
 
-def upsert_webhook_endpoint(client_id, url, subscribed_events):    
+def upsert_webhook_endpoint(client_id, url, subscribed_events, secret):    
     result = webhook_endpoints_collection.update_one(
         {"client_id":client_id, "url":url},
         {
@@ -10,7 +10,8 @@ def upsert_webhook_endpoint(client_id, url, subscribed_events):
                 "client_id": client_id,
                 "url": url,
                 "active": True,
-                "created_at": datetime.now(timezone.utc)
+                "created_at": datetime.now(timezone.utc),
+                "signing_secret": secret
             },
             "$addToSet": {
                 "subscribed_events": {
@@ -37,6 +38,7 @@ def get_webhook_endpoint_by_id(client_id, endpoint_id):
 
 def delete_webhook_endpoint(client_id, endpoint_id):
     return webhook_endpoints_collection.delete_one({"_id": ObjectId(endpoint_id), "client_id": client_id})
+
 
 def get_active_endpoints_by_event(client_id, event_type):
     return webhook_endpoints_collection.find({"client_id": client_id, "active": True, "subscribed_events":event_type})

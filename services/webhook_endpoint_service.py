@@ -1,3 +1,4 @@
+import secrets
 from repositories import webhook_endpoint_repository
 from schemas.webhook_endpoint import WebhookEndpointResponse
 from exceptions.webhook_endpoint_exception import WebhookEndpointNotFoundException
@@ -7,15 +8,17 @@ def register_webhook_endpoint(client, data):
     client_id = client["_id"]
     url = str(data["url"])
     subscribed_events = data["subscribed_events"]
+    secret = secrets.token_hex(nbytes=32)
 
-    endpoint_data, is_created = webhook_endpoint_repository.upsert_webhook_endpoint(client_id, url, subscribed_events)
+    endpoint_data, is_created = webhook_endpoint_repository.upsert_webhook_endpoint(client_id, url, subscribed_events, secret)
 
     response = WebhookEndpointResponse(
         id = str(endpoint_data["_id"]),
         url = endpoint_data["url"],
         subscribed_events = endpoint_data["subscribed_events"],
         active = endpoint_data["active"],
-        created_at = endpoint_data["created_at"]
+        created_at = endpoint_data["created_at"],
+        signing_secret = endpoint_data["signing_secret"] if is_created else None
     )
 
     return response, is_created

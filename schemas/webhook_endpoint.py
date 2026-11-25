@@ -15,4 +15,5 @@ class WebhookEndpointResponse(BaseModel):
     subscribed_events: list[EventName] = []
     active: bool
     created_at: datetime
+    signing_secret: str | None = None
     model_config = ConfigDict(extra="forbid")
