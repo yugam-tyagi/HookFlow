@@ -30,6 +30,10 @@ def get_delivery_by_id(delivery_id):
     return deliveries_collection.find_one({"_id": ObjectId(delivery_id)})
 
 
+def get_deliveries_by_client_and_event(client_id, event_id):
+    return deliveries_collection.find({"client_id": ObjectId(client_id), "event_id": ObjectId(event_id)})
+
+
 def update_delivery_outcome(delivery_id, status, http_status, response_body, error_message, completed_at):
     deliveries_collection.update_one(
         {"_id": ObjectId(delivery_id)},
