@@ -59,10 +59,12 @@ def test_create_event_with_multiple_endpoints(client, events_test_data):
     subscribed_events1 = ["order.created"]
     subscribed_events2 = ["payment.completed"]
 
-    webhook_endpoint_repository.upsert_webhook_endpoint(events_test_data['client_id'], url1, subscribed_events1)
-    webhook_endpoint_repository.upsert_webhook_endpoint(events_test_data['client_id'], url2, subscribed_events1)
-    webhook_endpoint_repository.upsert_webhook_endpoint(events_test_data['client_id'], url3, subscribed_events2)
-    webhook_endpoint_repository.upsert_webhook_endpoint(events_test_data['client_id'], url4, subscribed_events1)
+    test_signing_secret = "hookflow_test_secret_1234567890abcdef"
+
+    webhook_endpoint_repository.upsert_webhook_endpoint(events_test_data['client_id'], url1, subscribed_events1, test_signing_secret)
+    webhook_endpoint_repository.upsert_webhook_endpoint(events_test_data['client_id'], url2, subscribed_events1, test_signing_secret)
+    webhook_endpoint_repository.upsert_webhook_endpoint(events_test_data['client_id'], url3, subscribed_events2, test_signing_secret)
+    webhook_endpoint_repository.upsert_webhook_endpoint(events_test_data['client_id'], url4, subscribed_events1, test_signing_secret)
 
     webhook_endpoints_collection.update_one(
         {"url": url4, "client_id": events_test_data['client_id']},
@@ -137,7 +139,8 @@ def test_create_event_with_multiple_endpoints(client, events_test_data):
 def test_create_event_with_no_matching_endpoints(client, events_test_data):
     url = "https://webhook-a.example.com/events"
     subscribed_events = ["payment.completed"]
-    webhook_endpoint_repository.upsert_webhook_endpoint(events_test_data['client_id'], url, subscribed_events)
+    test_signing_secret = "hookflow_test_secret_1234567890abcdef"
+    webhook_endpoint_repository.upsert_webhook_endpoint(events_test_data['client_id'], url, subscribed_events, test_signing_secret)
 
     payload = {
         "event_type": "order.created",

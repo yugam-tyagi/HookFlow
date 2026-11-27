@@ -1,8 +1,28 @@
+# Python virtual environments
 venv/
+.venv/
+
+# Python cache files
 __pycache__/
 *.py[cod]
+.pytest_cache/
+
+# Environment variables and secrets
 .env
+.env.*
+!.env.example
+
+# IDE settings
 .idea/
 .vscode/
-.pytest_cache/
+
+# Celery Beat schedule files
 celerybeat-schedule*
+
+# Test and coverage artifacts
+.coverage
+htmlcov/
+
+# OS-generated files
+.DS_Store
+Thumbs.db

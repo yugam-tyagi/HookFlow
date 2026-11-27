@@ -62,7 +62,7 @@ def test_register_endpoint(client, webhook_test_data):
     assert response.status_code == 201
 
     data = response.json()
-    assert set(data.keys()) == {"id", "url", "subscribed_events", "active", "created_at"}
+    assert set(data.keys()) == {"id", "url", "subscribed_events", "active", "created_at", "signing_secret"}
     assert payload["url"] == data["url"]
     assert payload["subscribed_events"] == data["subscribed_events"]
     assert data["active"] is True
@@ -140,7 +140,7 @@ def test_register_endpoint_with_empty_events(client, webhook_test_data):
     assert response.status_code == 201
 
     data = response.json()
-    assert set(data.keys()) == {"id", "url", "subscribed_events", "active", "created_at"}
+    assert set(data.keys()) == {"id", "url", "subscribed_events", "active", "created_at", "signing_secret"}
     assert data["url"] == payload["url"]
     assert data["subscribed_events"] == []
     assert data["active"] is True
