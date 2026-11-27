@@ -214,3 +214,8 @@ pytest
 ---
 
 **HookFlow** — Exploring reliable asynchronous processing, distributed systems concepts, concurrency control, and secure webhook delivery.
+
+
+## Documentation
+
+- [System Architecture](docs/architecture.md)
